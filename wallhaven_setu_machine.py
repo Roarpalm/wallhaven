@@ -91,10 +91,16 @@ def get_img(url_list):
             img_bf_2 = BeautifulSoup(str(img_url), 'lxml')
             img_url = img_bf_2.img.get('src')
             response = session.get(img_url, headers=headers)
+
+            b = os.path.abspath('.') + '\\new\\'
+            #判断当前路径是否存在，没有则创建new文件夹
+            if not os.path.exists(b):
+                os.makedirs(b)
+            filename = b + filename
             with open(filename, "wb") as f :
-                f.write(response.content)   
-                f.close()
+                f.write(response.content)
             print(f'完成图片：{filename}')
+            
             success_url.append(i)
             fail_url = i
             fail_url_list.remove(fail_url)
