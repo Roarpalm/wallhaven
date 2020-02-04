@@ -11,7 +11,8 @@ import requests, os, time, threading
 # 开始计时
 start_time = time.time()
 
-# 图片url列表, 在此处修改
+
+# 图片url列表, 在此处修改 
 list_url = []
 
 # 计数器
@@ -46,16 +47,16 @@ data = {
 login_url = 'https://wallhaven.cc/auth/login'
 login_response = session.post(login_url, headers=headers, data=data)
 
-def get_img():
+
+
+def get_img(url_list):
+    '''下载图片'''
     global download
-    for i in list_url:
-        # 下载超过300秒自动跳过
-        with eventlet.Timeout(300,False):
+    for i in url_list:
+        with eventlet.Timeout(120,False):
             download += 1
-            # 图片重命名
             name = i.split('/')
             filename = name[-1] + '.jpg'
-
             print(f'下载第{download}张图片：{filename}')
             img_req = session.get(url = i, headers=headers)
             img_req.encoding = 'utf-8'
@@ -73,12 +74,13 @@ def get_img():
             filename = b + filename
             with open(filename, "wb") as f :
                 f.write(response.content)
+
             print(f'完成图片：{filename}')
-            
             success_url.append(i)
             fail_url = i
             fail_url_list.remove(fail_url)
-            
+            time.sleep(2)
+
 if __name__ == '__main__':
     print(f'即将下载{len(list_url)}张图片')
     print(list_url)
@@ -86,7 +88,19 @@ if __name__ == '__main__':
     fail_url_list = list_url
     success_url = []
 
-    get_img()
+    n = int(len(list_url) / 4)
+    n2 = n * 2
+    n3 = n * 3
+    new_list = [list_url[0:n], list_url[n:n2], list_url[n2:n3], list_url[n3:len(list_url)]]
+
+    th = []
+    for i in new_list:
+        t = threading.Thread(target=get_img, args=(i,))
+        th.append(t)
+    for i in th:
+        i.start()
+    for i in th:
+        i.join()        
 
     end_time = time.time()
     print(f'用时{end_time - start_time}秒')
