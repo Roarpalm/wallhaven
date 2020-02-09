@@ -8,50 +8,39 @@ from bs4 import BeautifulSoup
 from lxml import etree
 import requests, os, time, threading
 
-# 开始计时
-start_time = time.time()
+def login():
+    global session
 
+    print('开始登录...')
+    # 请求登录页面，获取cookie
+    login_index_url = 'https://wallhaven.cc/login'
+  
+    #为了保存cookie，用requests.session进行请求
+    session = requests.session()
+    login_index_response = session.get(login_index_url, headers=headers)
+    result = login_index_response.content.decode()
+    html = etree.HTML(result)
+ 
+    _token = html.xpath(r'//*[@id="login"]/input[1]')[0].attrib
+    _token = _token['value']
 
-# 图片url列表, 在此处修改 
-list_url = []
+    data = {
+        '_token' : _token,
+        'username': '', # 账号
+        'password': ''  # 密码
+    }
 
-# 计数器
-download = 0
-
-headers = {'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'}
-
-# 请求登录页面，获取cookie
-login_index_url = 'https://wallhaven.cc/login'
-login_index_headers = {
-    'referer': 'https://wallhaven.cc/login',
-    'user-agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
-}
-
-#为了保存cookie我们用requests.session进行请求
-session = requests.session()
-login_index_response = session.get(login_index_url, headers=login_index_headers)
-result = login_index_response.content.decode()
-html = etree.HTML(result)
-
-#获取_token
-_token = html.xpath(r'//*[@id="login"]/input[1]')[0].attrib
-_token = _token['value']
-
-data = {
-    '_token' : _token,
-    'username': '', #账号
-    'password': '' #密码
-}
-
-# 请求登录的url
-login_url = 'https://wallhaven.cc/auth/login'
-login_response = session.post(login_url, headers=headers, data=data)
+    # 请求登录的url
+    login_url = 'https://wallhaven.cc/auth/login'
+ 
+    session.post(login_url, headers=headers, data=data)
+    print('登录成功')
 
 
 
 def get_img(url_list):
     '''下载图片'''
-    global download
+    global download, session
     for i in url_list:
         with eventlet.Timeout(120,False):
             download += 1
@@ -82,25 +71,41 @@ def get_img(url_list):
             time.sleep(2)
 
 if __name__ == '__main__':
+    # 开始计时
+    start_time = time.time()
+
+    # 图片url列表
+    list_url = []
+
+    # 计数器
+    download = 0
+
+    headers = {'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'}
+
+    login()
     print(f'即将下载{len(list_url)}张图片')
     print(list_url)
 
     fail_url_list = list_url
     success_url = []
 
+    # 将list_url 重写为 包含4个list的list
     n = int(len(list_url) / 4)
     n2 = n * 2
     n3 = n * 3
     new_list = [list_url[0:n], list_url[n:n2], list_url[n2:n3], list_url[n3:len(list_url)]]
 
+    # 开启4个线程
     th = []
+    th_num = 0
     for i in new_list:
-        t = threading.Thread(target=get_img, args=(i,))
+        th_num += 1
+        t = threading.Thread(name=f'线程{th_num}', target=get_img, args=(i,))
         th.append(t)
     for i in th:
         i.start()
     for i in th:
-        i.join()        
+        i.join()
 
     end_time = time.time()
     print(f'用时{end_time - start_time}秒')
@@ -108,5 +113,5 @@ if __name__ == '__main__':
     if fail_url_list:
         print(f'{len(fail_url_list)}张图片下载失败\n{fail_url_list}')
     print(f'{len(success_url)}张图片下载成功\n{success_url}')
-
+    
     input('回车以结束程序')

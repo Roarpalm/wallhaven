@@ -8,52 +8,42 @@ from bs4 import BeautifulSoup
 from lxml import etree
 import requests, os, time, threading
 
-# 开始计时
-start_time = time.time()
+def login():
+    global session
 
-# 图片url列表
-list_url = []
-
-# 计数器
-download = 0
-
-headers = {'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'}
-
-# 请求登录页面，获取cookie
-login_index_url = 'https://wallhaven.cc/login'
-login_index_headers = {
-    'referer': 'https://wallhaven.cc/login',
-    'user-agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
-}
+    print('开始登录...')
+    # 请求登录页面，获取cookie
+    login_index_url = 'https://wallhaven.cc/login'
+  
+    #为了保存cookie，用requests.session进行请求
+    session = requests.session()
+    login_index_response = session.get(login_index_url, headers=headers)
+    result = login_index_response.content.decode()
+    html = etree.HTML(result)
  
-#为了保存cookie我们用requests.session进行请求
-session = requests.session()
-login_index_response = session.get(login_index_url, headers=login_index_headers)
-result = login_index_response.content.decode()
-html = etree.HTML(result)
+    _token = html.xpath(r'//*[@id="login"]/input[1]')[0].attrib
+    _token = _token['value']
 
-#获取_token
-_token = html.xpath(r'//*[@id="login"]/input[1]')[0].attrib
-_token = _token['value']
+    data = {
+        '_token' : _token,
+        'username': '', # 账号
+        'password': ''  # 密码
+    }
 
-data = {
-    '_token' : _token,
-    'username': '', #账号
-    'password': '' #密码
-}
-
-# 请求登录的url
-login_url = 'https://wallhaven.cc/auth/login'
-login_response = session.post(login_url, headers=headers, data=data)
+    # 请求登录的url
+    login_url = 'https://wallhaven.cc/auth/login'
+  
+    session.post(login_url, headers=headers, data=data)
+    print('登录成功')
 
 
 
 def get_url():
     '''采集排行榜里的图片链接'''
 
-    global list_url
-    # 采集的页数
-    for i in range(4,5):
+    global list_url, session
+    # 采集的页数，括号内自己改
+    for i in range(1,10):
         print(f'正在采集第{i}页')
         if i == 1:
             # 001代表NSFW 1y代表过去一年 toplist
@@ -76,13 +66,13 @@ def get_url():
 
 def get_img(url_list):
     '''下载图片'''
-    global download
+    global download, session
     for i in url_list:
         with eventlet.Timeout(120,False):
             download += 1
             name = i.split('/')
             filename = name[-1] + '.jpg'
-            print(f'下载第{download}张图片：{filename}')
+            print(f'{threading.currentThread().getName()}下载第{download}张图片：{filename}')
             img_req = session.get(url = i, headers=headers)
             img_req.encoding = 'utf-8'
             img_html = img_req.content
@@ -92,15 +82,15 @@ def get_img(url_list):
             img_url = img_bf_2.img.get('src')
             response = session.get(img_url, headers=headers)
 
-            b = os.path.abspath('.') + '\\new\\'
             #判断当前路径是否存在，没有则创建new文件夹
+            b = os.path.abspath('.') + '\\new\\'
             if not os.path.exists(b):
                 os.makedirs(b)
             filename = b + filename
             with open(filename, "wb") as f :
                 f.write(response.content)
-            print(f'完成图片：{filename}')
-            
+
+            print(f'{threading.currentThread().getName()}下载完成：{filename}')
             success_url.append(i)
             fail_url = i
             fail_url_list.remove(fail_url)
@@ -109,6 +99,18 @@ def get_img(url_list):
 
             
 if __name__ == '__main__':
+    # 开始计时
+    start_time = time.time()
+
+    # 图片url列表
+    list_url = []
+
+    # 计数器
+    download = 0
+
+    headers = {'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'}
+
+    login()
     get_url()
     print(f'即将下载{len(list_url)}张图片')
     print(list_url)
@@ -122,9 +124,12 @@ if __name__ == '__main__':
     n3 = n * 3
     new_list = [list_url[0:n], list_url[n:n2], list_url[n2:n3], list_url[n3:len(list_url)]]
 
+    # 开启4个线程
     th = []
+    th_num = 0
     for i in new_list:
-        t = threading.Thread(target=get_img, args=(i,))
+        th_num += 1
+        t = threading.Thread(name=f'线程{th_num}', target=get_img, args=(i,))
         th.append(t)
     for i in th:
         i.start()
