@@ -42,13 +42,10 @@ def get_img(url_list):
     '''下载图片'''
     global download, session
     for i in url_list:
+        fail_url_list.append(i)
         with eventlet.Timeout(120,False):
 
             name = i.split('/')
-            #判断当前路径是否存在，没有则创建new文件夹
-            b = os.path.abspath('.') + '\\new\\'
-            if not os.path.exists(b):
-                os.makedirs(b)
             filename = b + name[-1] + '.jpg'
             print(f'开始下载：{name[-1]}')
 
@@ -73,8 +70,17 @@ if __name__ == '__main__':
     # 开始计时
     start_time = time.time()
 
+    # 采集的页数
+    page = list(range(1,6))
+    page_name = f'{page[0]}-{page[-1]}'
+
     # 图片url列表
     list_url = []
+
+    #新建文件夹
+    b = os.path.abspath('.') + '\\' + page_name +'\\'
+    if not os.path.exists(b):
+        os.makedirs(b)
 
     # 计数器
     download = 0
@@ -84,16 +90,20 @@ if __name__ == '__main__':
     login()
     print(f'即将下载{len(list_url)}张图片')
 
-    fail_url_list = list_url
+    fail_url_list = []
 
     # 将list_url 重写为 包含4个list的list
-    n = int(len(list_url) / 4)
-    n2, n3 = n * 2, n * 3
-    new_list = [list_url[0:n], list_url[n:n2], list_url[n2:n3], list_url[n3:len(list_url)]]
+    n = len(list_url) // 4
+    if n:
+        n2, n3 = n * 2, n * 3
+        new_list = [list_url[0:n], list_url[n:n2], list_url[n2:n3], list_url[n3:len(list_url)]]
 
-    # 线程池开启4个线程
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as e:
-        [e.submit(get_img, i) for i in new_list]
+        # 线程池开启4个线程
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as e:
+            [e.submit(get_img, i) for i in new_list]
+    else:
+        for i in list_url:
+            get_img(i)
 
     print(f'用时{time.time() - start_time}秒')
 
