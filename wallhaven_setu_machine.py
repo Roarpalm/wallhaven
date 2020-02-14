@@ -9,8 +9,8 @@ from lxml import etree
 import requests, os, time, concurrent.futures
 
 def login():
+    '''登录'''
     global session
-
     print('开始登录...')
     # 请求登录页面，获取cookie
     login_index_url = 'https://wallhaven.cc/login'
@@ -61,6 +61,22 @@ def get_url():
         print(f'第{i}页采集完成')
 
 
+def delete_url():
+    '''删除重复url'''
+    global list_url
+    # 我准备了一份过去一年toplist前30页，每页32张的文本，用来剔除下载不同时期的重复图片
+    with open('1Y1-30.txt', 'r') as f:
+        toplist = f.read()
+
+    delete_who = []
+    for i in list_url:
+        if i in toplist:
+            delete_who.append(i)
+            list_url.remove(i)
+
+    print(f'删除{len(delete_who)}个重复url')
+
+
 
 def get_img(url_list):
     '''下载图片'''
@@ -108,6 +124,7 @@ if __name__ == '__main__':
 
     login()
     get_url()
+    delete_url()
     print(f'即将下载{len(list_url)}张图片')
 
     #新建文件夹
