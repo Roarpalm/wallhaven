@@ -40,31 +40,31 @@ def login():
 
 def get_img(url_list):
     '''下载图片'''
-    global download, session
+    global download
     for i in url_list:
-        fail_url_list.append(i)
-        with eventlet.Timeout(120,False):
+        try:
+            with eventlet.Timeout(120, True):
+                name = i.split('/')
+                filename = b + name[-1] + '.jpg'
+                print(f'开始下载：{name[-1]}')
 
-            name = i.split('/')
-            filename = b + name[-1] + '.jpg'
-            print(f'开始下载：{name[-1]}')
+                img_req = session.get(url = i, headers=headers)
+                img_req.encoding = 'utf-8'
+                img_html = img_req.content
+                img_bf_1 = BeautifulSoup(img_html, 'lxml')
+                img_url = img_bf_1.find_all('div', class_='scrollbox')
+                img_bf_2 = BeautifulSoup(str(img_url), 'lxml')
+                img_url = img_bf_2.img.get('src')
+                response = session.get(img_url, headers=headers)
 
-            img_req = session.get(url = i, headers=headers)
-            img_req.encoding = 'utf-8'
-            img_html = img_req.content
-            img_bf_1 = BeautifulSoup(img_html, 'lxml')
-            img_url = img_bf_1.find_all('div', class_='scrollbox')
-            img_bf_2 = BeautifulSoup(str(img_url), 'lxml')
-            img_url = img_bf_2.img.get('src')
-            response = session.get(img_url, headers=headers)
+                with open(filename, "wb") as f :
+                    f.write(response.content)
 
-            with open(filename, "wb") as f :
-                f.write(response.content)
-
-            download += 1
-            print(f'第{download}张图片下载完成：{name[-1]}')
-            fail_url_list.remove(i)
-            time.sleep(1)
+                download += 1
+                print(f'第{download}张图片下载完成：{name[-1]}')
+        except:
+            print(f'{name[-1]}下载失败')
+            fail_url_list.append(i)
 
 if __name__ == '__main__':
     # 开始计时
@@ -93,13 +93,17 @@ if __name__ == '__main__':
     fail_url_list = []
 
     # 将list_url 重写为 包含4个list的list
-    n = len(list_url) // 4
+    n = len(list_url) // 8
     if n:
-        n2, n3 = n * 2, n * 3
-        new_list = [list_url[0:n], list_url[n:n2], list_url[n2:n3], list_url[n3:len(list_url)]]
+        n2 = n*2
+        n3 = n*3
+        n4 = n*4
+        n5 = n*5
+        n6 = n*6
+        n7 = n*7
+        new_list = [list_url[0:n], list_url[n:n2], list_url[n2:n3], list_url[n3:n4], list_url[n4:n5], list_url[n5:n6], list_url[n6:n7], list_url[n7:len(list_url)]]
 
-        # 线程池开启4个线程
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as e:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as e:
             [e.submit(get_img, i) for i in new_list]
     else:
         for i in list_url:
@@ -109,6 +113,6 @@ if __name__ == '__main__':
 
     if fail_url_list:
         print(f'{len(fail_url_list)}张图片下载失败\n{fail_url_list}')
-    print(f'{len(list_url) - len(fail_url_list)}张图片下载成功')
+    print(f'{download}张图片下载成功')
     
     input('回车以结束程序')
