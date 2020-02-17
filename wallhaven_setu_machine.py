@@ -48,9 +48,9 @@ def get_url():
         print(f'正在采集第{i}页')
         if i == 1:
             # 001代表NSFW 1y代表过去一年 1M代表过去一月 1w代表过去一周 1d代表过去一天 toplist
-            url = 'https://wallhaven.cc/search?categories=111&purity=001&topRange=3M&sorting=toplist&order=desc&page'
+            url = 'https://wallhaven.cc/search?categories=111&purity=001&topRange=1M&sorting=toplist&order=desc&page'
         else:
-            url = f'https://wallhaven.cc/search?categories=111&purity=001&topRange=3M&sorting=toplist&order=desc&page={i}'
+            url = f'https://wallhaven.cc/search?categories=111&purity=001&topRange=1M&sorting=toplist&order=desc&page={i}'
         req = session.get(url=url, headers=headers)
         req.encoding = 'utf-8'
         html1 = req.content
@@ -65,28 +65,23 @@ def get_url():
 
 
 
-def delete_url():
-    '''删除重复url'''
-    global list_url
-    # 我准备了一份过去3月toplist前30页，每页32张的文本，用来剔除下载不同时期的重复图片
-    with open('all-url.txt', 'r') as f:
-        toplist = f.read()
-
-    delete_who = 0
-    for i in list_url:
-        if i in toplist:
-            delete_who += 1
-            list_url.remove(i)
-
-    print(f'删除{delete_who}个重复url')
-
-
-
 def write_url():
-    with open('all-url.txt', 'a') as f:
+    # 读取已爬的url，如果重复，则删除
+    with open('all-url.txt', 'r') as f:
+        all_list = f.read().splitlines()
+        delete_who = 0
         for i in list_url:
-            f.write(i)
-            f.write(', ')
+            if i in all_list:
+                delete_who += 1
+                list_url.remove(i)
+        print(f'删除{delete_who}个重复url')
+
+    # 将新爬的url添加到列表末尾并写入
+    with open('all-url.txt', 'w') as f:
+        all_list.extend(list_url)
+        for i in all_list:
+            f.write(f'{i}\n')
+        print(f'新增{len(list_url)}个url到文本')
 
 
 
@@ -98,10 +93,6 @@ def get_img(url_list):
             with eventlet.Timeout(180, True):
                 name = i.split('/')
                 filename = b + name[-1] + '.jpg'
-                full_name = name[-1] + '.jpg'
-                # 这个判断用以剔除已经下载的图片不再重复下载，和delete_url()有些许功能重复，可以注释掉
-                if full_name in already_download:
-                    continue
                 print(f'开始下载：{name[-1]}')
 
                 img_req = session.get(url = i, headers=headers)
@@ -121,6 +112,21 @@ def get_img(url_list):
         except:
             print(f'下载失败：{name[-1]}')
             fail_url_list.append(i)
+
+
+def write_fail_url():
+    with open('fail.txt', 'r') as f:
+        fail_list = f.read().splitlines()
+        delete_who = 0
+        for i in fail_url_list:
+            if i in fail_list:
+                delete_who += 1
+                list_url.remove(i)
+        print(f'删除{delete_who}个重复url')
+    with open('fail.txt', 'w') as f:
+        fail_list.extend(fail_url_list)
+        for i in fail_list:
+            f.write(f'{i}\n')
 
 
 
@@ -143,7 +149,7 @@ if __name__ == '__main__':
     start_time = time.time()
 
     # 在此更改采集的页数
-    page = list(range(1, 11))
+    page = list(range(1, 3))
     page_name = f'{page[0]}-{page[-1]}'
 
     # 图片url列表
@@ -157,23 +163,19 @@ if __name__ == '__main__':
     login()
     get_url()
     write_url()
-    #delete_url()
     print(f'即将下载{len(list_url)}张图片')
 
     #新建文件夹
-    b = 'E:\\wallhaven' + '\\' + page_name +'\\'
+    b = os.path.abspath('.') + '\\' + page_name +'\\'
     if not os.path.exists(b):
         os.makedirs(b)
 
     fail_url_list = []
 
-    # 已经下载的图片文件夹
-    already_download = os.listdir('')
-
     main()
 
     while True:
-        if len(fail_url_list) > 10:
+        if len(fail_url_list) > 8:
             print(f'{len(fail_url_list)}张图片下载失败\n{fail_url_list}')
             last_download = download
             list_url = fail_url_list
@@ -183,6 +185,7 @@ if __name__ == '__main__':
             print(f'{download - last_download}张图片下载成功')
         else:
             print(f'{len(fail_url_list)}张图片下载失败\n{fail_url_list}')
+            write_fail_url()
             break
 
     print(f'用时{time.time() - start_time}秒')
