@@ -12,30 +12,33 @@ def login():
     '''登录'''
     global session
     print('开始登录...')
-    # 请求登录页面，获取cookie
-    login_index_url = 'https://wallhaven.cc/login'
+    try:
+        # 请求登录页面，获取cookie
+        login_index_url = 'https://wallhaven.cc/login'
   
-    #为了保存cookie，用requests.session进行请求
-    session = requests.session()
-    login_index_response = session.get(login_index_url, headers=headers)
-    result = login_index_response.content.decode()
-    html = etree.HTML(result)
+        #为了保存cookie，用requests.session进行请求
+        session = requests.session()
+        login_index_response = session.get(login_index_url, headers=headers)
+        result = login_index_response.content.decode()
+        html = etree.HTML(result)
  
-    _token = html.xpath(r'//*[@id="login"]/input[1]')[0].attrib
-    _token = _token['value']
+        _token = html.xpath(r'//*[@id="login"]/input[1]')[0].attrib
+        _token = _token['value']
 
-    data = {
-        '_token' : _token,
-        'username': '', # 账号
-        'password': ''  # 密码
-    }
+        data = {
+            '_token' : _token,
+            'username': '', # 账号
+            'password': ''  # 密码
+        }
 
-    # 请求登录的url
-    login_url = 'https://wallhaven.cc/auth/login'
+        # 请求登录的url
+        login_url = 'https://wallhaven.cc/auth/login'
  
-    session.post(login_url, headers=headers, data=data)
-    print('登录成功')
-
+        session.post(login_url, headers=headers, data=data)
+    except:
+        print('登录失败')
+    else:
+        print('登录成功')
 
 
 def get_url():
@@ -45,9 +48,9 @@ def get_url():
         print(f'正在采集第{i}页')
         if i == 1:
             # 001代表NSFW 1y代表过去一年 1M代表过去一月 1w代表过去一周 1d代表过去一天 toplist
-            url = 'https://wallhaven.cc/search?categories=111&purity=001&topRange=6M&sorting=toplist&order=desc&page'
+            url = 'https://wallhaven.cc/search?categories=111&purity=001&topRange=3M&sorting=toplist&order=desc&page'
         else:
-            url = f'https://wallhaven.cc/search?categories=111&purity=001&topRange=6M&sorting=toplist&order=desc&page={i}'
+            url = f'https://wallhaven.cc/search?categories=111&purity=001&topRange=3M&sorting=toplist&order=desc&page={i}'
         req = session.get(url=url, headers=headers)
         req.encoding = 'utf-8'
         html1 = req.content
@@ -61,20 +64,29 @@ def get_url():
         print(f'第{i}页采集完成')
 
 
+
 def delete_url():
     '''删除重复url'''
     global list_url
-    # 我准备了一份过去一年toplist前30页，每页32张的文本，用来剔除下载不同时期的重复图片
-    with open('1Y1-30.txt', 'r') as f:
+    # 我准备了一份过去3月toplist前30页，每页32张的文本，用来剔除下载不同时期的重复图片
+    with open('all-url.txt', 'r') as f:
         toplist = f.read()
 
-    delete_who = []
+    delete_who = 0
     for i in list_url:
         if i in toplist:
-            delete_who.append(i)
+            delete_who += 1
             list_url.remove(i)
 
-    print(f'删除{len(delete_who)}个重复url')
+    print(f'删除{delete_who}个重复url')
+
+
+
+def write_url():
+    with open('all-url.txt', 'a') as f:
+        for i in list_url:
+            f.write(i)
+            f.write(', ')
 
 
 
@@ -83,9 +95,13 @@ def get_img(url_list):
     global download
     for i in url_list:
         try:
-            with eventlet.Timeout(120, True):
+            with eventlet.Timeout(180, True):
                 name = i.split('/')
                 filename = b + name[-1] + '.jpg'
+                full_name = name[-1] + '.jpg'
+                # 这个判断用以剔除已经下载的图片不再重复下载，和delete_url()有些许功能重复，可以注释掉
+                if full_name in already_download:
+                    continue
                 print(f'开始下载：{name[-1]}')
 
                 img_req = session.get(url = i, headers=headers)
@@ -103,38 +119,13 @@ def get_img(url_list):
                 download += 1
                 print(f'第{download}张图片下载完成：{name[-1]}')
         except:
-            print(f'{name[-1]}下载失败')
+            print(f'下载失败：{name[-1]}')
             fail_url_list.append(i)
 
-if __name__ == '__main__':
-    # 开始计时
-    start_time = time.time()
 
-    # 采集的页数
-    page = list(range(1,6))
-    page_name = f'{page[0]}-{page[-1]}'
 
-    # 图片url列表
-    list_url = []
-
-    # 计数器
-    download = 0
-
-    headers = {'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'}
-
-    login()
-    get_url()
-    delete_url()
-    print(f'即将下载{len(list_url)}张图片')
-
-    #新建文件夹
-    b = os.path.abspath('.') + '\\' + page_name +'\\'
-    if not os.path.exists(b):
-        os.makedirs(b)
-
-    fail_url_list = []
-
-    # 将list_url 重写为 包含4个list的list
+def main():
+    # 将list_url 重写为 包含8个list的list
     n = len(list_url) // 8
     n2 = n*2
     n3 = n*3
@@ -147,10 +138,54 @@ if __name__ == '__main__':
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as e:
         [e.submit(get_img, i) for i in new_list]
 
-    print(f'用时{time.time() - start_time}秒')
+if __name__ == '__main__':
+    # 开始计时
+    start_time = time.time()
 
-    if fail_url_list:
-        print(f'{len(fail_url_list)}张图片下载失败\n{fail_url_list}')
+    # 在此更改采集的页数
+    page = list(range(1, 11))
+    page_name = f'{page[0]}-{page[-1]}'
+
+    # 图片url列表
+    list_url = []
+
+    # 计数器
+    download = 0
+
+    headers = {'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'}
+
+    login()
+    get_url()
+    write_url()
+    #delete_url()
+    print(f'即将下载{len(list_url)}张图片')
+
+    #新建文件夹
+    b = 'E:\\wallhaven' + '\\' + page_name +'\\'
+    if not os.path.exists(b):
+        os.makedirs(b)
+
+    fail_url_list = []
+
+    # 已经下载的图片文件夹
+    already_download = os.listdir('')
+
+    main()
+
+    while True:
+        if len(fail_url_list) > 10:
+            print(f'{len(fail_url_list)}张图片下载失败\n{fail_url_list}')
+            last_download = download
+            list_url = fail_url_list
+            fail_url_list = []
+            print('再次下载...')
+            main()
+            print(f'{download - last_download}张图片下载成功')
+        else:
+            print(f'{len(fail_url_list)}张图片下载失败\n{fail_url_list}')
+            break
+
+    print(f'用时{time.time() - start_time}秒')
     print(f'{download}张图片下载成功')
     
     input('回车以结束程序')

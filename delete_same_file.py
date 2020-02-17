@@ -25,3 +25,5 @@ if work:
     print(f'已删除{work}个文件')
 else:
     print('没有重复文件')
+
+input()
