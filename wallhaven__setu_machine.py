@@ -5,7 +5,6 @@ import eventlet
 eventlet.monkey_patch()
 
 from bs4 import BeautifulSoup
-from lxml import etree
 import requests, os, time, concurrent.futures
 
 def login():
@@ -15,16 +14,14 @@ def login():
     try:
         # 请求登录页面，获取cookie
         login_index_url = 'https://wallhaven.cc/login'
-  
+    
         #为了保存cookie，用requests.session进行请求
         session = requests.session()
-        login_index_response = session.get(login_index_url, headers=headers)
-        result = login_index_response.content.decode()
-        html = etree.HTML(result)
-
-        # 获取token
-        _token = html.xpath(r'//*[@id="login"]/input[1]')[0].attrib
-        _token = _token['value']
+        html = session.get(login_index_url, headers=headers).text
+        bf_1 = BeautifulSoup(html, 'lxml')
+        hidden = bf_1.find_all('input', {'type':'hidden'})
+        for i in hidden:
+            _token = i['value']
 
         data = {
             '_token' : _token,
@@ -32,7 +29,7 @@ def login():
             'password': ''  # 密码
         }
 
-        # 请求登录的url
+            # 请求登录的url
         login_url = 'https://wallhaven.cc/auth/login'
         session.post(login_url, headers=headers, data=data)
     except:
@@ -158,6 +155,7 @@ if __name__ == '__main__':
     fail_url_list = []
 
     # 解析网页这一步如果开多线程去做就会频繁解析失败，线程开得越多失败率越高
+    print('开始解析网页url...')
     [get_img(url) for url in list_url]
     print(f'{len(ture_url)}个图片url解析成功')
 
