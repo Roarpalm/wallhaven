@@ -46,11 +46,9 @@ async def login():
             await asyncio.gather(*new_tasks)
             print('解析完成')
 
-            # 限制同时下载的协程只有20个
-            ten = asyncio.Semaphore(20)
             works = []
             for i in ture_url:
-                work = img_download(i, session, ten)
+                work = img_download(i, session)
                 works.append(work)
             await asyncio.gather(*works)
             print(f'{len(fail_url_list)}张图片下载失败')
@@ -100,29 +98,23 @@ async def get_img(url, session, one):
 
 
 
-async def img_download(url, session, ten):
+async def img_download(url, session):
     '''下载图片'''
     global fail_url_list, download
-    async with ten:
-        name = url.split('/')
-        filename = b + name[-1]
-        print(f'开始下载：{name[-1]}')
-        try:
-            async with session.get(url, headers=headers) as response:
-                async with aiofiles.open(filename, "wb") as f :
-                    while True:
-                        # 分步下载，哪怕下载失败也能看到大概一半的图片
-                        chunk = await response.content.read(1024)
-                        if not chunk:
-                            break
-                        await f.write(chunk)
-            download += 1
-            print(f'第{download}张图片下载完成：{name[-1]}')
-            await asyncio.sleep(0.5)
-        except:
-            print(f'下载失败：{name[-1]}')
-            # 保存下载失败的url在fail_url_list
-            fail_url_list.append(url)
+    name = url.split('/')
+    filename = b + name[-1]
+    print(f'开始下载：{name[-1]}')
+    try:
+        async with session.get(url, headers=headers) as response:
+            async with aiofiles.open(filename, "wb") as f :
+                img = await response.content.read()
+                await f.write(img)
+        download += 1
+        print(f'第{download}张图片下载完成：{name[-1]}')
+    except:
+        print(f'下载失败：{name[-1]}')
+        # 保存下载失败的url在fail_url_list
+        fail_url_list.append(url)
 
 
 
@@ -188,5 +180,5 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     future = asyncio.ensure_future(login())
     loop.run_until_complete(future)
-    print(f'用时{time.time()-start}')
+    print(f'用时{time.time()-start}s')
     input('回车以结束程序...')
