@@ -81,8 +81,8 @@
 page_url = 'https://wallhaven.cc/favorites/fav/73q5p3' # 网页链接
 img_url = 'https://w.wallhaven.cc/full/73/wallhaven-73q5p3.jpg' # 图片链接
 
-small_name = url.split('/')[-1]
-little_name = small_name[0:2]
-full_url = 'https://w.wallhaven.cc/full/' + little_name + '/wallhaven-' + 'small_name' + '.jpg'
+small_url = url.split('/')[-1]
+little_url = small_url[0:2]
+full_url = 'https://w.wallhaven.cc/full/' + little_url + '/wallhaven-' + small_url + '.jpg'
 ```
 - 于是乎，更新5.0算了，从网页链接推导得到图片链接，直接开全速下载，省去一个个等待网页解析的时候，省去连接超时被服务器断开的烦恼
