@@ -6,12 +6,12 @@ import asyncio, aiohttp, aiofiles, os, time
 
 async def main():
     with open('fail.txt', 'r') as f:
-        ture_url = f.read().splitlines()
+        list_url = f.read().splitlines()
 
-    print(f'开始下载{len(ture_url)}张图片')
+    print(f'开始下载{len(list_url)}张图片')
     async with aiohttp.ClientSession() as session:
         tasks = []
-        for url in ture_url:
+        for url in list_url:
             task = img_download(url, session)
             tasks.append(task)
         await asyncio.gather(*tasks)
@@ -21,6 +21,8 @@ async def main():
             for i in fail_url_list:
                 f.write(f'{i}\n')
     print(f'还有{len(fail_url_list)}张图片下载失败')
+
+
 
 async def img_download(url, session):
     '''下载图片'''

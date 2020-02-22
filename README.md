@@ -72,3 +72,17 @@
 - 修改下载代码，分段下载有点坑
 - 取消下载限制
 - 重写 download_again，配合 fail.txt 可以直接使用了
+
+## 2020年2月22日更新(5.0):
+- 我是傻逼
+- 之前的爬虫流程都是：爬排行榜得到各图的网页链接-进入各网页链接获取各图片链接-下载图片
+- 我定睛一看，这图片链接怎么长得跟网页链接那么像呢
+```python
+page_url = 'https://wallhaven.cc/favorites/fav/73q5p3' # 网页链接
+img_url = 'https://w.wallhaven.cc/full/73/wallhaven-73q5p3.jpg' # 图片链接
+
+small_name = url.split('/')[-1]
+little_name = small_name[0:2]
+full_url = 'https://w.wallhaven.cc/full/' + little_name + '/wallhaven-' + 'small_name' + '.jpg'
+```
+- 于是乎，更新5.0算了，从网页链接推导得到图片链接，直接开全速下载，省去一个个等待网页解析的时候，省去连接超时被服务器断开的烦恼
