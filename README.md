@@ -94,3 +94,7 @@ full_url = 'https://w.wallhaven.cc/full/' + little_url + '/wallhaven-' + small_u
 
 ## 2020年2月27日更新(6.1):
 - 引入 tqdm 模块，虽然没处理完善但下载时可以看到程序在动，避免产生程序卡死的想法
+
+## 2020年2月28日更新(6.2):
+- 简写部分代码
+- 采用 Python3.7 版本之后才有的 asyncio.run() 函数运行主程序
