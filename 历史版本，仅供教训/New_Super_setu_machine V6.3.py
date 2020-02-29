@@ -3,7 +3,6 @@
 
 from bs4 import BeautifulSoup
 import aiohttp, asyncio, os, time
-from tqdm import tqdm
 
 async def login():
     '''登录'''
@@ -106,17 +105,18 @@ async def img_download(url, session, ten, fail=False):
                     'Range': f'bytes={first_byte}-{file_size}'}
                 async with session.get(url, headers=headers_) as response:
                     with(open(filename, 'ab')) as f:
-                        with tqdm(total=file_size, initial=first_byte, unit='B', unit_scale=True, desc=f'{name[-1]} {round(file_size/1024,2)}KB', ncols=85) as pbar:
-                            while True:
-                                chunk = await response.content.read(1024)
-                                if not chunk:
-                                    break
-                                f.write(chunk)
-                                pbar.update(len(chunk))
+                        progress = ProgressBar(name[-1], total=file_size, unit="KB", chunk_size=1024, run_status="正在下载", fin_status="下载完成")
+                        while True:
+                            chunk = await response.content.read(1024)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                            await progress.refresh(count=len(chunk))
             if fail:
                 fail_url_list.remove(url)
-        except:
+        except Exception as e:
             print(f'下载失败：{name[-1]} {round(os.path.getsize(filename)/1024, 2)}kb/{round(file_size/1024, 2)}kb')
+            print(e)
             # 保存下载失败的url在fail_url_list
             fail_url_list.append(url)
 
@@ -141,6 +141,39 @@ def write_url():
             f.write(f'{i}\n')
         print(f'新增{len(list_url)}个url到文本')
 
+
+
+class ProgressBar(object):
+
+    def __init__(
+        self, title, count=0.0, run_status=None, fin_status=None, total=100.0, unit='', sep='/', chunk_size=1.0):
+        super(ProgressBar, self).__init__()
+        self.info = "[%s] %s %.2f %s %s %.2f %s"
+        self.title = title
+        self.total = total
+        self.count = count
+        self.chunk_size = chunk_size
+        self.status = run_status or ""
+        self.fin_status = fin_status or " " * len(self.status)
+        self.unit = unit
+        self.seq = sep
+
+    async def __get_info(self):
+        # [名称] 状态 进度 单位 分割线 总数 单位
+        _info = self.info % (self.title, self.status,
+                             self.count/self.chunk_size, self.unit, self.seq, self.total/self.chunk_size, self.unit)
+        return _info
+
+    async def refresh(self, count=1, status=None):
+        self.count += count
+        # if status is not None:
+        self.status = status or self.status
+        end_str = "\r"
+        if self.count >= self.total:
+            end_str = '\n'
+            self.status = status or self.fin_status
+        info = await self.__get_info()
+        print(info, end=end_str)
 
 if __name__ == "__main__":
     list_url = []

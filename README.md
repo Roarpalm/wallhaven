@@ -98,3 +98,7 @@ full_url = 'https://w.wallhaven.cc/full/' + little_url + '/wallhaven-' + small_u
 ## 2020年2月28日更新(6.2):
 - 简写部分代码
 - 采用 Python3.7 版本之后才有的 asyncio.run() 函数运行主程序
+
+## 2020年2月29日更新(6.2):
+- 嗨呀，今年有29号
+- 解决tqdm显示问题
