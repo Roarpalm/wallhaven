@@ -102,3 +102,8 @@ full_url = 'https://w.wallhaven.cc/full/' + little_url + '/wallhaven-' + small_u
 ## 2020年2月29日更新(6.2):
 - 嗨呀，今年有29号
 - 解决tqdm显示问题
+
+## 2020年3月3日更新(6.3):
+- 修复不能正确剔除重复url的bug
+- asyncio.run()有问题，改回去
+- 新增 setu-machine.exe，搭配 all-url.txt 无需安装Python环境即可运行
