@@ -107,3 +107,6 @@ full_url = 'https://w.wallhaven.cc/full/' + little_url + '/wallhaven-' + small_u
 - 修复不能正确剔除重复url的bug
 - asyncio.run()有问题，改回去
 - 新增 setu-machine.exe，搭配 all-url.txt 无需安装Python环境即可运行
+
+## 2020年3月4日更新(6.4):
+- 修复下载失败死循环的问题

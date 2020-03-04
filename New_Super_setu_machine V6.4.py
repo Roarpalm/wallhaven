@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 #-*-coding:utf-8-*-
 
-from bs4 import BeautifulSoup
 from tqdm import tqdm
+from bs4 import BeautifulSoup
 from time import time
 import aiohttp, asyncio, os
+
 
 async def login():
     '''登录'''
@@ -22,8 +23,8 @@ async def login():
 
                 data = {
                     '_token' : _token,
-                    'username': input('请输入账号：'), # 填入账号
-                    'password': input('请输入密码：')  # 填入密码
+                    'username': '', # 填入账号
+                    'password': ''  # 填入密码
                 }
 
                 # 请求登录的url
@@ -33,15 +34,10 @@ async def login():
                     print('登录成功')
                 else:
                     print('登录失败')
-                    return None
-
 
                 # 限制同时进行的协程只有1个，多次尝试感觉是网站的问题，同时请求网页的次数越多，获取失败的概率越大
                 one = asyncio.Semaphore(1)
-                top = input(
-                    '想看最近一年的排行榜请输入 1Y\n想看最近半年的排行榜请输入 6M\n想看最近三月的排行榜请输入 3M\n想看最近一月的排行榜请输入 1M\n想看最近一周的排行榜请输入 7d\n想看最近三天的排行榜请输入 3d\n注意大小写：'
-                )
-                tasks = [get_url(i, session, one, top) for i in page]
+                tasks = [get_url(i, session, one) for i in page]
                 await asyncio.gather(*tasks)
 
                 write_url()
@@ -63,15 +59,15 @@ async def login():
 
 
 
-async def get_url(i, session, one, top):
+async def get_url(i, session, one):
     global list_url
     async with one:
         print(f'正在采集第{i}页')
         if i == 1:
             # 001代表NSFW 1y代表过去一年 1M代表过去一月 1w代表过去一周 1d代表过去一天 toplist
-            url = f'https://wallhaven.cc/search?categories=111&purity=001&topRange={top}&sorting=toplist&order=desc&page'
+            url = 'https://wallhaven.cc/search?categories=111&purity=001&topRange=1M&sorting=toplist&order=desc&page'
         else:
-            url = f'https://wallhaven.cc/search?categories=111&purity=001&topRange={top}&sorting=toplist&order=desc&page={i}'
+            url = f'https://wallhaven.cc/search?categories=111&purity=001&topRange=1M&sorting=toplist&order=desc&page={i}'
 
         resp = await session.get(url, headers=headers)
         req = await resp.text()
@@ -153,24 +149,19 @@ def write_url():
 
 
 if __name__ == "__main__":
-    print('-'*20,'欢迎使用Wallhaven色图机 V6.4','-'*20)
-    print('-'*26,'作者：Roarpalm','-'*28,) 
-    print('-'*9,'项目地址：https://github.com/Roarpalm/wallhaven', '-'*8)
-    print('\n')
     list_url = []
     fail_url_list = []
     good_url = []
 
     # 在此更改采集的页数
-    n = int(input('你想看几页色图：'))
-    page = list(range(1,n+1))
+    page = list(range(1,11))
     page_name = f'{page[0]}-{page[-1]}'
 
     # 新建文件夹
-    b = os.path.abspath('.') + '\\' + page_name + '\\'
+    b = os.path.abspath('.') + '\\' + page_name +'\\'
     if not os.path.exists(b):
         os.makedirs(b)
-        
+
     headers = {'User-Agent' : 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36'}
 
     # 开始计时
