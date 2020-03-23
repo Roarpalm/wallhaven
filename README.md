@@ -115,3 +115,8 @@ full_url = 'https://w.wallhaven.cc/full/' + little_url + '/wallhaven-' + small_u
 - 并没有修复下载失败死循环的问题，只是不写死循环用有限循环了
 - 把会陷入死循环的url写入文本
 - 稍微修改 ```get_url()``` 的打印方式
+
+## 2020年3月23日更新(6.6):
+- 稍微修改 ```img_download()``` 函数
+- 找到了死活下载失败的原因：有些图片的header里没有 ```content-length```
+- 但是我不知道怎么解决，直接跳过，建议手动打开

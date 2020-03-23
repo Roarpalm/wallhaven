@@ -68,9 +68,9 @@ async def get_url(page, session):
         pbar.set_description(f'正在采集第{i}页')
         if i == 1:
             # 001代表NSFW 1y代表过去一年 1M代表过去一月 1w代表过去一周 1d代表过去一天 toplist
-            url = 'https://wallhaven.cc/search?categories=111&purity=001&topRange=1M&sorting=toplist&order=desc&page'
+            url = 'https://wallhaven.cc/search?categories=111&purity=001&topRange=3d&sorting=toplist&order=desc&page'
         else:
-            url = f'https://wallhaven.cc/search?categories=111&purity=001&topRange=1M&sorting=toplist&order=desc&page={i}'
+            url = f'https://wallhaven.cc/search?categories=111&purity=001&topRange=3d&sorting=toplist&order=desc&page={i}'
 
         resp = await session.get(url, headers=headers)
         req = await resp.text()
@@ -93,9 +93,12 @@ async def img_download(url, session, ten, fail=False):
     async with ten:
         name = url.split('/')
         filename = b + name[-1]
-        try:
-            async with session.get(url, headers=headers) as response:
+        async with session.get(url, headers=headers) as response:
+            try:
                 file_size = int(response.headers['content-length'])
+            except Exception as e:
+                print(f'{e}\n请手动打开{url}')
+            else:
                 if os.path.exists(filename):
                     # 读取文件大小
                     first_byte = os.path.getsize(filename)
@@ -108,24 +111,25 @@ async def img_download(url, session, ten, fail=False):
                 headers_ = {
                     'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36',
                     'Range': f'bytes={first_byte}-{file_size}'}
-                async with session.get(url, headers=headers_) as response:
-                    with(open(filename, 'ab')) as f:
-                        with tqdm(total=file_size, initial=first_byte, unit='B', unit_scale=True, desc=f'{name[-1]} {round(file_size/1024,2)}KB', ncols=85) as pbar:
-                            while True:
-                                chunk = await response.content.read(1024)
-                                if not chunk:
-                                    break
-                                f.write(chunk)
-                                pbar.update(len(chunk))
-            if fail:
-                fail_url_list.remove(url)
-        except Exception as e:
-            if fail:
-                print(f'重新下载失败：{name[-1]}\n原因：{e}')
-            else:
-                print(f'下载失败：{name[-1]}\n原因：{e}')
-                # 保存下载失败的url在fail_url_list
-                fail_url_list.append(url)
+                try:
+                    async with session.get(url, headers=headers_) as response:
+                        with(open(filename, 'ab')) as f:
+                            with tqdm(total=file_size, initial=first_byte, unit='B', unit_scale=True, desc=f'{name[-1]} {round(file_size/1024,2)}KB', ncols=85) as pbar:
+                                while True:
+                                    chunk = await response.content.read(1024)
+                                    if not chunk:
+                                        break
+                                    f.write(chunk)
+                                    pbar.update(len(chunk))
+                    if fail:
+                        fail_url_list.remove(url)
+                except Exception as e:
+                    if fail:
+                        print(f'重新下载失败：{name[-1]}\n原因：{e}')
+                    else:
+                        print(f'下载失败：{name[-1]}\n原因：{e}')
+                        # 保存下载失败的url在fail_url_list
+                        fail_url_list.append(url)
 
 
 
@@ -135,6 +139,7 @@ def write_url():
     # 读取已爬的url，如果重复，则删除
     with open('all-url.txt', 'r') as f:
         all_list = f.read().splitlines()
+        print(f'已爬取{len(all_list)}张图片')
         for i in list_url:
             if i not in all_list:
                 good_url.append(i)
@@ -155,7 +160,7 @@ if __name__ == "__main__":
     good_url = []
 
     # 在此更改采集的页数
-    page = list(range(1,11))
+    page = list(range(1,2))
     page_name = f'{page[0]}-{page[-1]}'
 
     # 新建文件夹
