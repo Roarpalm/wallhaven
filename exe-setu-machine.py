@@ -212,9 +212,9 @@ class Wallhaven():
 
 
 if __name__ == "__main__":
-    print('-'*20,'欢迎使用Wallhaven色图机 V6.4','-'*20)
+    print('-'*20,'欢迎使用Wallhaven色图机 V6.7','-'*20)
     print('-'*26,'作者：Roarpalm','-'*28,) 
-    print('-'*9,'项目地址：https://github.com/Roarpalm/wallhaven', '-'*8)
+    print('-'*10,'项目地址：https://github.com/Roarpalm/wallhaven', '-'*11)
     print('\n')
 
     Wallhaven()
