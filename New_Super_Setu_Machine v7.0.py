@@ -72,17 +72,18 @@ class Spider():
 
 
     def create_txt(self):
-            '''首次运行创建文本文件'''
-            if not os.path.exists('url.txt'):
-                f = open('url.txt', 'a')
-                f.close()
-            if not os.path.exists('all url.txt'):
-                f = open('all url.txt', 'a')
-                f.close()
+        '''首次运行创建文本文件'''
+        if not os.path.exists('url.txt'):
+            f = open('url.txt', 'a')
+            f.close()
+        if not os.path.exists('all url.txt'):
+            f = open('all url.txt', 'a')
+            f.close()
 
 
 
     async def main(self):
+        '''主程序'''
         self.create_txt()
         async with aiohttp.connector.TCPConnector(limit=300, force_close=True, enable_cleanup_closed=True, verify_ssl=False) as tc:
             async with aiohttp.ClientSession(connector=tc) as session:
@@ -92,6 +93,7 @@ class Spider():
 
 
     def run_main(self):
+        '''运行'''
         start = time()
         try:
             asyncio.run(self.main())
@@ -175,6 +177,7 @@ class Download():
     
 
     async def main(self):
+        '''主程序'''
         self.new_dir()
         async with aiohttp.connector.TCPConnector(limit=300, force_close=True, enable_cleanup_closed=True, verify_ssl=False) as tc:
             async with aiohttp.ClientSession(connector=tc) as session:
@@ -194,6 +197,7 @@ class Download():
 
 
     def run_main(self):
+        '''运行'''
         start = time()
         try:
             asyncio.run(self.main())
