@@ -178,7 +178,7 @@ class Wallhaven():
                 try:
                     response = await session.get(url, headers=headers)
                     with open(filename, 'ab') as f:
-                        with tqdm(total=file_size, initial=first_byte, unit='B', unit_scale=True, desc=f'{name[-1]} {round(file_size/1024,2)}KB', ncols=85) as pbar: # 进度条
+                        with tqdm(total=file_size, initial=first_byte, unit='B', unit_scale=True, desc=name[-1], ncols=85) as pbar: # 进度条
                             while True:
                                 chunk = await response.content.read(1024)
                                 if not chunk:
