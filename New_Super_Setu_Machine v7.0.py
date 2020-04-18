@@ -14,7 +14,7 @@ class Spider():
         self.page_list = list(range(1, int(e1.get()) + 1)) # 爬取的页数
         self.date = e2.get() # 爬取的榜单
         with open('all url.txt', 'r+') as f:
-            f.write(strftime('%Y-%m-%d',localtime(time())) + '\n')
+            f.write(strftime('%Y-%m-%d',localtime(time())) + e2.get() + '\n')
             self.all_list = f.read().splitlines()
             print(f'已爬取{len(self.all_list)}张图片')
         self.run_main()
@@ -32,8 +32,8 @@ class Spider():
             _token = i['value']
         data = {
             '_token' : _token,
-            'username': '', # 账号
-            'password': ''  # 密码
+            'username': 'roarpalm', # 账号
+            'password': 'qweasdzxc'  # 密码
         }
         login_url = 'https://wallhaven.cc/auth/login'
         response = await session.post(login_url, headers=header, data=data)
@@ -104,14 +104,16 @@ class Spider():
         tkinter.messagebox.showinfo(title='Hi!', message='爬取完成')
 
 
+
 class Download():
     def __init__(self):
         b2['state'] = 'disabled'
         self.fail_url_list = [] # 下载失败的url
-        self.dir_name = strftime('%Y-%m-%d',localtime(time())) # 文件名
+        self.dir_name = strftime('%Y-%m-%d',localtime(time())) + e2.get() # 文件名
         self.dir_path = os.path.abspath('.') + os.sep + self.dir_name + os.sep # 路径
         with open('url.txt', 'r') as f:
             self.url_list = f.read().splitlines()
+            print(f'即将开始下载{len(self.url_list)}张图片...')
         self.run_main()
         b2['state'] = 'normal'
 
@@ -139,6 +141,14 @@ class Download():
                     first_byte = 0
                 if first_byte >= file_size:
                     print(f'{name[-1]}已存在')
+                    if fail:
+                        self.fail_url_list.remove(url)
+                    else:
+                        async with aiofiles.open('url.txt', 'r+') as f:
+                            data = await f.read()
+                            await f.seek(0)
+                            await f.truncate()
+                            await f.write(data.replace(f'{url}\n', ''))
                     return
                 headers = {
                     'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36',
@@ -161,7 +171,6 @@ class Download():
                     if fail:
                         self.fail_url_list.remove(url) # 重新下载成功则从失败url中除去
                 except:
-                    print(f'下载失败：{name[-1]}')
                     if not fail:
                         self.fail_url_list.append(url)
 
@@ -206,6 +215,8 @@ class Download():
             self.run_main()
         print(f'用时{int((time()-start) // 60)}分{int((time()-start) % 60)}秒')
         tkinter.messagebox.showinfo(title='Hi!', message='下载完成')
+
+
 
 class Application(tk.Tk):
     def __init__(self):
