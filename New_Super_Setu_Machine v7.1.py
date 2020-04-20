@@ -32,8 +32,8 @@ class Spider():
             _token = i['value']
         data = {
             '_token' : _token,
-            'username': 'roarpalm', # 账号
-            'password': 'qweasdzxc'  # 密码
+            'username': '', # 账号
+            'password': ''  # 密码
         }
         login_url = 'https://wallhaven.cc/auth/login'
         response = await session.post(login_url, headers=header, data=data)
@@ -211,8 +211,8 @@ class Download():
         try:
             asyncio.run(self.main())
         except (aiohttp.client_exceptions.ClientConnectionError, asyncio.exceptions.TimeoutError):
-            sleep(10)
-            self.run_main()
+            tkinter.messagebox.showerror(title='错误！', message='链接超时，请再次尝试')
+            return
         print(f'用时{int((time()-start) // 60)}分{int((time()-start) % 60)}秒')
         tkinter.messagebox.showinfo(title='Hi!', message='下载完成')
 
