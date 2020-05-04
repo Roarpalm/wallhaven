@@ -10,6 +10,15 @@ exe版的代码
 ## New_Super_setu-machine.py:
 真正的代码，往里面填入账号密码就可以使用
 
+## new GUI Wallhaven Setu-machine.py
+使用 Pyside2 做ui的代码，往里面填入账号密码就可以使用
+
+Pyside2 的包较大，可以用豆瓣的源进行安装
+
+```pip install pyside2 -i https://pypi.douban.com/simple/```
+
+## wallhaven.ui
+```new GUI Wallhaven Setu-machine.py``` 的ui文件
 - - - -
 ### 版本信息
 
@@ -178,3 +187,6 @@ exe版本进行了更新
 
 #### 2020年4月18日更新(7.1):
 小修小补
+
+#### 2020年5月4日更新(7.2):
+用 Pyside2 写了一套新的UI，更好看，操作简单
