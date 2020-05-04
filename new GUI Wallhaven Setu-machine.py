@@ -1,10 +1,9 @@
-import asyncio, aiohttp, aiofiles, os, threading
+import asyncio, aiohttp, aiofiles, os
 from time import time, sleep, strftime, localtime
 from lxml import etree
-from tqdm import tqdm
 from bs4 import BeautifulSoup
 
-from PySide2.QtWidgets import QApplication, QMessageBox, QProgressBar, QButtonGroup, QPlainTextEdit
+from PySide2.QtWidgets import QApplication, QProgressBar, QButtonGroup, QPlainTextEdit
 from PySide2.QtUiTools import QUiLoader
 from threading import  Thread
 
