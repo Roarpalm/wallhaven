@@ -1,11 +1,15 @@
 import asyncio, aiohttp, aiofiles, os
 from time import time, sleep, strftime, localtime
-from lxml import etree
 from bs4 import BeautifulSoup
+from threading import Thread
 
-from PySide2.QtWidgets import QApplication, QProgressBar, QButtonGroup, QPlainTextEdit
+from PySide2.QtWidgets import QApplication
 from PySide2.QtUiTools import QUiLoader
-from threading import  Thread
+from PySide2.QtCore import Signal,QObject
+
+class MySignals(QObject):
+    text_print = Signal(str)
+    update = Signal(int)
 
 class GUI():
     def __init__(self):
@@ -18,15 +22,18 @@ class GUI():
         self.window.rb4.clicked.connect(self.m1)
         self.window.rb5.clicked.connect(self.m3)
         self.window.rb6.clicked.connect(self.m6)
-        self.window.bt1.clicked.connect(lambda : self.thread_it(self.spider))
-        self.window.bt2.clicked.connect(lambda : self.thread_it(self.download))
+        self.window.bt1.clicked.connect(self.spider)
+        self.window.bt2.clicked.connect(self.download)
 
-    @staticmethod
-    def thread_it(func):
-        '''打包进线程'''
-        t = Thread(target=func) 
-        t.setDaemon(True)
-        t.start()
+        self.ms = MySignals()
+        self.ms.text_print.connect(self.print_to_GUI)
+        self.ms.update.connect(self.update_pbar)
+
+    def print_to_GUI(self, text):
+        self.window.pte.appendPlainText(str(text))
+    
+    def update_pbar(self, i):
+        self.window.pb.setValue(i)
 
     def d1(self):
         self.date = '1d'
@@ -47,10 +54,11 @@ class GUI():
         with open('all url.txt', 'r+') as f:
             self.all_list = f.read().splitlines()
             f.write(strftime('%Y-%m-%d',localtime(time())) + '-' + self.date + '\n')
-            self.window.pte.appendPlainText(f'已爬取{len(self.all_list)}张图片')
+            self.ms.text_print.emit(f'已爬取{len(self.all_list)}张图片')
+
         async def login(session):
             '''登录'''
-            self.window.pte.appendPlainText('开始登录...')
+            self.ms.text_print.emit('开始登录...')
             login_index_url = 'https://wallhaven.cc/login'
             response = await session.get(login_index_url, headers=self.header)
             html = await response.text()
@@ -66,9 +74,9 @@ class GUI():
             login_url = 'https://wallhaven.cc/auth/login'
             response = await session.post(login_url, headers=self.header, data=data)
             if response.status == 200:
-                self.window.pte.appendPlainText('登录成功')
+                self.ms.text_print.emit('登录成功')
             else:
-                self.window.pte.appendPlainText(f'登录失败 HTTP:{response.status}')
+                self.ms.text_print.emit(f'登录失败 HTTP:{response.status}')
 
         async def get_url(session):
             '''爬取排行榜'''
@@ -91,7 +99,7 @@ class GUI():
                             await f.write(full_url + '\n')
                         async with aiofiles.open('url.txt', 'a') as e:
                             await e.write(full_url + '\n')
-                self.window.pb.setValue(i + 1)
+                self.ms.update.emit(i + 1)
 
         def create_txt():
             '''首次运行创建文本文件'''
@@ -117,9 +125,10 @@ class GUI():
             except (aiohttp.client_exceptions.ClientConnectionError, asyncio.exceptions.TimeoutError):
                 sleep(10)
                 run_main()
-            self.window.pte.appendPlainText(f'用时{int((time()-start) // 60)}分{int((time()-start) % 60)}秒')
+            self.ms.text_print.emit(f'用时{int((time()-start) // 60)}分{int((time()-start) % 60)}秒')
         
-        run_main()
+        t = Thread(target=run_main)
+        t.start()
 
     def download(self):
         self.fail_url_list = [] # 下载失败的url
@@ -127,8 +136,8 @@ class GUI():
         self.dir_path = os.path.abspath('.') + os.sep + self.dir_name + os.sep # 路径
         with open('url.txt', 'r') as f:
             self.url_list = f.read().splitlines()
-            self.window.pte.appendPlainText(f'即将开始下载{len(self.url_list)}张图片...')
-        self.window.pb.setRange(0, len(self.url_list))
+            self.ms.text_print.emit(f'即将开始下载{len(self.url_list)}张图片...')
+            self.window.pb.setRange(0, len(self.url_list))
         self.n = 0
 
         def new_dir():
@@ -154,7 +163,7 @@ class GUI():
                     else:
                         first_byte = 0
                     if first_byte >= file_size:
-                        self.window.pte.appendPlainText(f'{name[-1]}已存在')
+                        self.ms.text_print.emit(f'{name[-1]}已存在')
                         if fail:
                             self.fail_url_list.remove(url)
                         else:
@@ -183,11 +192,11 @@ class GUI():
                         if fail:
                             self.fail_url_list.remove(url) # 重新下载成功则从失败url中除去
                         self.n += 1
-                        self.window.pb.setValue(self.n)
+                        self.ms.update.emit(self.n)
                     except:
                         if not fail:
                             self.fail_url_list.append(url)
-                        self.window.pte.appendPlainText(f'{name[-1]}下载失败')
+                        self.ms.text_print.emit(f'{name[-1]}下载失败')
 
         def write_fail_url():
             '''保存失败url'''
@@ -204,7 +213,7 @@ class GUI():
                     sem = asyncio.Semaphore(10)
                     tasks = [img_download(url, sem, session) for url in self.url_list]
                     await asyncio.gather(*tasks)
-                    self.window.pte.appendPlainText(f'{len(self.fail_url_list)}张图片下载失败\n开始重新下载')
+                    self.ms.text_print.emit(f'{len(self.fail_url_list)}张图片下载失败\n开始重新下载')
                     for _ in range(3): # 尝试重新下载3次，避免死循环
                         if self.fail_url_list:
                             tasks = [img_download(url, sem, session, fail=True) for url in self.fail_url_list]
@@ -212,7 +221,7 @@ class GUI():
                         else:
                             break
                     write_fail_url()
-                    self.window.pte.appendPlainText(f'程序执行完毕\n{len(self.url_list) - len(self.fail_url_list)}张图片下载完成')
+                    self.ms.text_print.emit(f'程序执行完毕\n{len(self.url_list) - len(self.fail_url_list)}张图片下载完成')
 
         def run_main():
             '''运行'''
@@ -222,11 +231,13 @@ class GUI():
             except (aiohttp.client_exceptions.ClientConnectionError, asyncio.exceptions.TimeoutError):
                 run_main()
                 return
-            self.window.pte.appendPlainText(f'用时{int((time()-start) // 60)}分{int((time()-start) % 60)}秒')
+            self.ms.text_print.emit(f'用时{int((time()-start) // 60)}分{int((time()-start) % 60)}秒')
 
-        run_main()
+        t = Thread(target=run_main)
+        t.start()
 
-app = QApplication([])
-stats = GUI()
-stats.window.show()
-app.exec_()
+if __name__ == "__main__":
+    app = QApplication([])
+    stats = GUI()
+    stats.window.show()
+    app.exec_()
