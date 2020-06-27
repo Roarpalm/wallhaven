@@ -20,6 +20,9 @@ Pyside2 的包较大，可以用豆瓣的源进行安装
 ## wallhaven.ui
 ```new GUI Wallhaven Setu-machine.py``` 的ui文件
 
+## Wallhaven Setu Machine.py
+The Engish version with command line.
+
 ## 说明
 ![Instructions](imgs/Instructions.jpg?raw=true)
 - - - -
@@ -196,3 +199,6 @@ exe版本进行了更新
 
 #### 2020年5月5日更新(7.3):
 修复了 ```new GUI Wallhaven Setu-machine.py``` 中 在子线程更新GUI导致程序崩溃的bug
+
+#### 2020年6月27日更新(7.4):
+特意给这位朋友写了个英文版，没有图形界面
