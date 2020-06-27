@@ -19,6 +19,9 @@ Pyside2 的包较大，可以用豆瓣的源进行安装
 
 ## wallhaven.ui
 ```new GUI Wallhaven Setu-machine.py``` 的ui文件
+
+## 说明
+![Instructions](imgs/Instructions.jpg?raw=true)
 - - - -
 ### 版本信息
 
