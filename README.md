@@ -1,12 +1,6 @@
 ## 历史的垃圾桶：
 历史版本，仅作备份
 
-## exe程序：
-打包好了一个exe给不懂代码的小朋友使用
-
-## exe-setu-machine.py:
-exe版的代码
-
 ## New_Super_setu-machine.py:
 真正的代码，往里面填入账号密码就可以使用
 
