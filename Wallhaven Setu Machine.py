@@ -9,7 +9,8 @@ class Wallhaven():
         self.header = {'User-Agent' : 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36'}
         self.date = input("Which day's sexy img do you want: ")
         # please input 1d, 3d, 7d, 1M, 3M, 6M, 1Y
-        self.page = input('How many page do you want: ')
+        self.page = input('How many pages do you want: ')
+        # 24 imgs per page
         self.spider()
         self.download()
 
@@ -43,8 +44,8 @@ class Wallhaven():
                 print(f'Login fail, HTTP:{response.status}')
 
         async def get_url(session):
-            '''spider leaderboard'''
-            pbar = tqdm(self.page_list, ncols=85) # 进度条
+            '''get leaderboard'''
+            pbar = tqdm(self.page_list, ncols=85) # process bar
             for i in pbar:
                 pbar.set_description(f'{i} page...')
                 if i == 1:
@@ -59,7 +60,7 @@ class Wallhaven():
                     page_url = each.a.get('href')
                     small_name = page_url.split('/')[-1]
                     little_name = small_name[0:2]
-                    full_url = 'https://w.wallhaven.cc/full/' + little_name + '/wallhaven-' + small_name + '.jpg' # 通过排行榜的链接url补全可以直接下载图片的url
+                    full_url = 'https://w.wallhaven.cc/full/' + little_name + '/wallhaven-' + small_name + '.jpg' # get the full url
                     if full_url not in self.all_list:
                         async with aiofiles.open('all url.txt', 'a') as f:
                             await f.write(full_url + '\n')
@@ -96,9 +97,9 @@ class Wallhaven():
         run_main()
 
     def download(self):
-        self.fail_url_list = [] # 下载失败的url
-        self.dir_name = strftime('%Y-%m-%d',localtime(time())) + '-' + self.date # 文件名
-        self.dir_path = os.path.abspath('.') + os.sep + self.dir_name + os.sep # 路径
+        self.fail_url_list = []
+        self.dir_name = strftime('%Y-%m-%d',localtime(time())) + '-' + self.date # name
+        self.dir_path = os.path.abspath('.') + os.sep + self.dir_name + os.sep # path
         with open('url.txt', 'r') as f:
             self.url_list = f.read().splitlines()
             print(f'It is going to download {len(self.url_list)} imgs...')
@@ -116,18 +117,18 @@ class Wallhaven():
                 filename = self.dir_path + name[-1]
                 response = await session.get(url, headers=self.header)
                 try:
-                    file_size = int(response.headers['content-length']) # 询问文件大小
+                    file_size = int(response.headers['content-length']) # ask size
                 except:
                     if not fail:
-                        self.fail_url_list.append(url) # 有些图片的header里没有content-length会出现异常
+                        self.fail_url_list.append(url) # some imgs don't have content-length
                     return
                 else:
                     if os.path.exists(filename):
-                        first_byte = os.path.getsize(filename) # 本地文件大小
+                        first_byte = os.path.getsize(filename)
                     else:
                         first_byte = 0
                     if first_byte >= file_size:
-                        print(f'{name[-1]}已存在')
+                        print(f'{name[-1]} is already')
                         if fail:
                             self.fail_url_list.remove(url)
                         else:
@@ -156,12 +157,12 @@ class Wallhaven():
                             await f.truncate()
                             await f.write(data.replace(f'{url}\n', ''))
                         if fail:
-                            self.fail_url_list.remove(url) # 重新下载成功则从失败url中除去
+                            self.fail_url_list.remove(url) # delete url from fail_url_list
                         self.n += 1
                     except:
                         if not fail:
                             self.fail_url_list.append(url)
-                        print(f'{name[-1]}下载失败')
+                        print(f'{name[-1]} fail to download')
 
         def write_fail_url():
             '''save fail url'''
@@ -178,8 +179,8 @@ class Wallhaven():
                     sem = asyncio.Semaphore(10)
                     tasks = [img_download(url, sem, session) for url in self.url_list]
                     await asyncio.gather(*tasks)
-                    print(f'{len(self.fail_url_list)}fail to download\nauto start downloading again...')
-                    for _ in range(3): # 尝试重新下载3次，避免死循环
+                    print(f'{len(self.fail_url_list)} imgs fail to download\nauto start downloading again...')
+                    for _ in range(3): # try to download again in 3 times
                         if self.fail_url_list:
                             tasks = [img_download(url, sem, session, fail=True) for url in self.fail_url_list]
                             await asyncio.gather(*tasks)
