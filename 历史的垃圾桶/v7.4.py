@@ -1,3 +1,4 @@
+# utf-8
 import asyncio, aiohttp, aiofiles, os
 from time import time, sleep, strftime, localtime
 from bs4 import BeautifulSoup
@@ -24,13 +25,13 @@ class GUI():
         self.window.rb6.clicked.connect(self.m6)
         self.window.bt1.clicked.connect(self.spider)
         self.window.bt2.clicked.connect(self.download)
+
         self.ms = MySignals()
         self.ms.text_print.connect(self.print_to_GUI)
         self.ms.update.connect(self.update_pbar)
 
     def print_to_GUI(self, text):
         self.window.pte.appendPlainText(str(text))
-    
     def update_pbar(self, i):
         self.window.pb.setValue(i)
 
@@ -53,11 +54,11 @@ class GUI():
         with open('all url.txt', 'r+') as f:
             self.all_list = f.read().splitlines()
             f.write(strftime('%Y-%m-%d',localtime(time())) + '-' + self.date + '\n')
-            self.ms.text_print.emit(f'已爬取{len(self.all_list)}张图片')
+            self.ms.text_print.emit(f'����ȡ{len(self.all_list)}��ͼƬ')
 
         async def login(session):
-            '''登录'''
-            self.ms.text_print.emit('开始登录...')
+            '''��¼'''
+            self.ms.text_print.emit('��ʼ��¼...')
             login_index_url = 'https://wallhaven.cc/login'
             response = await session.get(login_index_url, headers=self.header)
             html = await response.text()
@@ -67,18 +68,18 @@ class GUI():
                 _token = i['value']
             data = {
                 '_token' : _token,
-                'username': 'roarpalm', # 账号
-                'password': 'qweasdzxc'  # 密码
+                'username': 'roarpalm', # �˺�
+                'password': 'qweasdzxc'  # ����
             }
             login_url = 'https://wallhaven.cc/auth/login'
             response = await session.post(login_url, headers=self.header, data=data)
             if response.status == 200:
-                self.ms.text_print.emit('登录成功')
+                self.ms.text_print.emit('��¼�ɹ�')
             else:
-                self.ms.text_print.emit(f'登录失败 HTTP:{response.status}')
+                self.ms.text_print.emit(f'��¼ʧ�� HTTP:{response.status}')
 
         async def get_url(session):
-            '''爬取排行榜'''
+            '''��ȡ���а�'''
             for i in self.page_list:
                 if i == 1:
                     url = f'https://wallhaven.cc/search?categories=111&purity=001&topRange={self.date}&sorting=toplist&order=desc&page'
@@ -92,7 +93,7 @@ class GUI():
                     page_url = each.a.get('href')
                     small_name = page_url.split('/')[-1]
                     little_name = small_name[0:2]
-                    full_url = 'https://w.wallhaven.cc/full/' + little_name + '/wallhaven-' + small_name + '.jpg' # 通过排行榜的链接url补全可以直接下载图片的url，默认图片是jpg格式
+                    full_url = 'https://w.wallhaven.cc/full/' + little_name + '/wallhaven-' + small_name + '.jpg' # ͨ�����а������url��ȫ����ֱ������ͼƬ��url��Ĭ��ͼƬ��jpg��ʽ
                     if full_url not in self.all_list:
                         async with aiofiles.open('all url.txt', 'a') as f:
                             await f.write(full_url + '\n')
@@ -101,7 +102,7 @@ class GUI():
                 self.ms.update.emit(i + 1)
 
         def create_txt():
-            '''首次运行创建文本文件'''
+            '''�״����д����ı��ļ�'''
             if not os.path.exists('url.txt'):
                 f = open('url.txt', 'a')
                 f.close()
@@ -110,7 +111,7 @@ class GUI():
                 f.close()
 
         async def main():
-            '''主程序'''
+            '''������'''
             create_txt()
             async with aiohttp.connector.TCPConnector(limit=300, force_close=True, enable_cleanup_closed=True, verify_ssl=False) as tc:
                 async with aiohttp.ClientSession(connector=tc) as session:
@@ -124,62 +125,43 @@ class GUI():
             except (aiohttp.client_exceptions.ClientConnectionError, asyncio.exceptions.TimeoutError):
                 sleep(10)
                 run_main()
-            self.ms.text_print.emit(f'用时{int((time()-start) // 60)}分{int((time()-start) % 60)}秒')
+            self.ms.text_print.emit(f'��ʱ{int((time()-start) // 60)}��{int((time()-start) % 60)}��')
         
         t = Thread(target=run_main)
         t.start()
 
     def download(self):
-        self.fail_url_list = [] # 下载失败的url
-        self.dir_name = strftime('%Y-%m-%d',localtime(time())) + '-' + self.date # 文件名
-        self.dir_path = os.path.abspath('.') + os.sep + self.dir_name + os.sep # 路径
+        self.fail_url_list = [] # ����ʧ�ܵ�url
+        self.dir_name = strftime('%Y-%m-%d',localtime(time())) + '-' + self.date # �ļ���
+        self.dir_path = os.path.abspath('.') + os.sep + self.dir_name + os.sep # ·��
         with open('url.txt', 'r') as f:
             self.url_list = f.read().splitlines()
-            self.ms.text_print.emit(f'开始下载{len(self.url_list)}张图片...')
+            self.ms.text_print.emit(f'������ʼ����{len(self.url_list)}��ͼƬ...')
             self.window.pb.setRange(0, len(self.url_list))
         self.n = 0
 
         def new_dir():
-            '''新建文件夹'''
+            '''�½��ļ���'''
             if not os.path.exists(self.dir_path):
                 os.makedirs(self.dir_path)
         
         async def img_download(url, sem, session, fail=False):
-            '''下载图片'''
+            '''����ͼƬ'''
             async with sem:
-                flag = False
                 name = url.split('/')
                 filename = self.dir_path + name[-1]
                 response = await session.get(url, headers=self.header)
-                if response.status != 200:
-                    url = url.replace(".jpg",".png") # 如果404则把url中的jpg替换为png
-                    name = url.split('/')
-                    flag = True
-                    response = await session.get(url, headers=self.header) # 重新获取
-                    if response.status != 200:
-                        if not fail:
-                            self.ms.text_print.emit(f"{name[-1]}失效，已移除")
-                            self.fail_url_list.append(url)
-                            async with aiofiles.open('url.txt', 'r+') as f:
-                                data = await f.read()
-                                await f.seek(0)
-                                await f.truncate()
-                                await f.write(data.replace(f'{url.replace(".png", ".jpg")}\n', ''))
-                        return
                 try:
-                    file_size = int(response.headers['content-length']) # 询问文件大小
+                    file_size = int(response.headers['content-length']) # ѯ���ļ���С
                 except:
-                    print(f"{url} file_size not found")
-                    if fail:
-                        self.fail_url_list.append(url)
                     return
                 else:
                     if os.path.exists(filename):
-                        first_byte = os.path.getsize(filename) # 本地文件大小
+                        first_byte = os.path.getsize(filename) # �����ļ���С
                     else:
                         first_byte = 0
                     if first_byte >= file_size:
-                        self.ms.text_print.emit(f'{name[-1]}已存在')
+                        self.ms.text_print.emit(f'{name[-1]}�Ѵ���')
                         if fail:
                             self.fail_url_list.remove(url)
                         else:
@@ -187,10 +169,7 @@ class GUI():
                                 data = await f.read()
                                 await f.seek(0)
                                 await f.truncate()
-                                if flag:
-                                    await f.write(data.replace(f"{url.replace('.png', '.jpg')}\n", ""))
-                                else:
-                                    await f.write(data.replace(f'{url}\n', ''))
+                                await f.write(data.replace(f'{url}\n', ''))
                         return
                     headers = {
                         'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36',
@@ -207,57 +186,50 @@ class GUI():
                             data = await f.read()
                             await f.seek(0)
                             await f.truncate()
-                            if flag:
-                                await f.write(data.replace(f'{url.replace(".png", ".jpg")}\n', ''))
-                            else:
-                                await f.write(data.replace(f'{url}\n', ''))
+                            await f.write(data.replace(f'{url}\n', ''))
                         if fail:
-                            self.fail_url_list.remove(url) # 重新下载成功则从失败url中除去
-
-                        if os.path.getsize(filename) < file_size: # 如果本地文件小于图片文件则加入重新下载
-                            self.fail_url_list.append(url)
-
+                            self.fail_url_list.remove(url) # �������سɹ����ʧ��url�г�ȥ
                         self.n += 1
                         self.ms.update.emit(self.n)
                     except:
                         if not fail:
                             self.fail_url_list.append(url)
-                        self.ms.text_print.emit(f'{name[-1]}下载失败')
+                        self.ms.text_print.emit(f'{name[-1]}����ʧ��')
 
         def write_fail_url():
-            '''保存失败url'''
+            '''����ʧ��url'''
             if self.fail_url_list:
                 with open('fail.txt', 'a') as f:
                     for i in self.fail_url_list:
                         f.write(i + '\n')
 
         async def main():
-            '''主程序'''
+            '''������'''
             new_dir()
             async with aiohttp.connector.TCPConnector(limit=300, force_close=True, enable_cleanup_closed=True, verify_ssl=False) as tc:
                 async with aiohttp.ClientSession(connector=tc) as session:
                     sem = asyncio.Semaphore(10)
                     tasks = [img_download(url, sem, session) for url in self.url_list]
                     await asyncio.gather(*tasks)
-                    self.ms.text_print.emit(f'{len(self.fail_url_list)}张图片下载失败\n开始重新下载')
-                    for _ in range(3): # 尝试重新下载3次，避免死循环
+                    self.ms.text_print.emit(f'{len(self.fail_url_list)}��ͼƬ����ʧ��\n��ʼ��������')
+                    for _ in range(3): # ������������3�Σ�������ѭ��
                         if self.fail_url_list:
                             tasks = [img_download(url, sem, session, fail=True) for url in self.fail_url_list]
                             await asyncio.gather(*tasks)
                         else:
                             break
                     write_fail_url()
-                    self.ms.text_print.emit(f'程序执行完毕\n{self.n}张图片下载完成')
+                    self.ms.text_print.emit(f'����ִ�����\n{len(self.url_list) - len(self.fail_url_list)}��ͼƬ�������')
 
         def run_main():
-            '''运行'''
+            '''����'''
             start = time()
             try:
                 asyncio.run(main())
             except (aiohttp.client_exceptions.ClientConnectionError, asyncio.exceptions.TimeoutError):
                 run_main()
                 return
-            self.ms.text_print.emit(f'用时{int((time()-start) // 60)}分{int((time()-start) % 60)}秒')
+            self.ms.text_print.emit(f'��ʱ{int((time()-start) // 60)}��{int((time()-start) % 60)}��')
 
         t = Thread(target=run_main)
         t.start()
