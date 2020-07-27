@@ -119,9 +119,7 @@ class Wallhaven():
                 try:
                     file_size = int(response.headers['content-length']) # ask size
                 except:
-                    if not fail:
-                        self.fail_url_list.append(url) # some imgs don't have content-length
-                    return
+                    url = url.replace("jpg", "png")
                 else:
                     if os.path.exists(filename):
                         first_byte = os.path.getsize(filename)
@@ -180,6 +178,11 @@ class Wallhaven():
                     tasks = [img_download(url, sem, session) for url in self.url_list]
                     await asyncio.gather(*tasks)
                     print(f'{len(self.fail_url_list)} imgs fail to download\nauto start downloading again...')
+                    with open("url.txt","r+",) as f:
+                        jpgs = f.read().splitlines()
+                        for i in jpgs:
+                            i = i.replace("jpg", "png")
+                            self.fail_url_list.append(i)
                     for _ in range(3): # try to download again in 3 times
                         if self.fail_url_list:
                             tasks = [img_download(url, sem, session, fail=True) for url in self.fail_url_list]

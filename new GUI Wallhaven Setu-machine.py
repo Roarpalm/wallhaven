@@ -68,8 +68,8 @@ class GUI():
                 _token = i['value']
             data = {
                 '_token' : _token,
-                'username': '', # 账号
-                'password': ''  # 密码
+                'username': 'roarpalm', # 账号
+                'password': 'qweasdzxc'  # 密码
             }
             login_url = 'https://wallhaven.cc/auth/login'
             response = await session.post(login_url, headers=self.header, data=data)
@@ -93,7 +93,7 @@ class GUI():
                     page_url = each.a.get('href')
                     small_name = page_url.split('/')[-1]
                     little_name = small_name[0:2]
-                    full_url = 'https://w.wallhaven.cc/full/' + little_name + '/wallhaven-' + small_name + '.jpg' # 通过排行榜的链接url补全可以直接下载图片的url
+                    full_url = 'https://w.wallhaven.cc/full/' + little_name + '/wallhaven-' + small_name + '.jpg' # 通过排行榜的链接url补全可以直接下载图片的url，默认图片是jpg格式
                     if full_url not in self.all_list:
                         async with aiofiles.open('all url.txt', 'a') as f:
                             await f.write(full_url + '\n')
@@ -154,9 +154,7 @@ class GUI():
                 try:
                     file_size = int(response.headers['content-length']) # 询问文件大小
                 except:
-                    if not fail:
-                        self.fail_url_list.append(url) # 有些图片的header里没有content-length会出现异常
-                    return
+                    url = url.replace("jpg","png") # 如果没有文件大小则把url中的jpg替换为png
                 else:
                     if os.path.exists(filename):
                         first_byte = os.path.getsize(filename) # 本地文件大小
@@ -214,6 +212,11 @@ class GUI():
                     tasks = [img_download(url, sem, session) for url in self.url_list]
                     await asyncio.gather(*tasks)
                     self.ms.text_print.emit(f'{len(self.fail_url_list)}张图片下载失败\n开始重新下载')
+                    with open("url.txt","r+",) as f:
+                        jpgs = f.read().splitlines()
+                        for i in jpgs:
+                            i = i.replace("jpg", "png")
+                            self.fail_url_list.append(i)
                     for _ in range(3): # 尝试重新下载3次，避免死循环
                         if self.fail_url_list:
                             tasks = [img_download(url, sem, session, fail=True) for url in self.fail_url_list]
