@@ -236,7 +236,7 @@ class GUI():
             new_dir()
             async with aiohttp.connector.TCPConnector(limit=300, force_close=True, enable_cleanup_closed=True, verify_ssl=False) as tc:
                 async with aiohttp.ClientSession(connector=tc) as session:
-                    sem = asyncio.Semaphore(10)
+                    sem = asyncio.Semaphore(10) # 限制异步线程数为10个
                     tasks = [img_download(url, sem, session) for url in self.url_list]
                     await asyncio.gather(*tasks)
                     self.ms.text_print.emit(f'{len(self.fail_url_list)}张图片下载失败\n开始重新下载')

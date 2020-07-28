@@ -1,9 +1,6 @@
 ## 历史的垃圾桶：
 历史版本，仅作备份
 
-## New_Super_setu-machine.py:
-真正的代码，往里面填入账号密码就可以使用
-
 ## new GUI Wallhaven Setu-machine.py
 使用 Pyside2 做ui的代码，往里面填入账号密码就可以使用
 
@@ -125,7 +122,7 @@ img_url = 'https://w.wallhaven.cc/full/73/wallhaven-73q5p3.jpg' # 图片链接
 
 small_url = url.split('/')[-1]
 little_url = small_url[0:2]
-full_url = 'https://w.wallhaven.cc/full/' + little_url + '/wallhaven-' + small_url + '.jpg'
+full_url = 'https://w.wallhaven.cc/full/' + little_url + '/wallhaven-' + small_url + '.jpg' # 或者.png
 ```
 于是乎，更新5.0算了，从网页链接推导得到图片链接，直接开全速下载，省去一个个等待网页解析的时候，省去连接超时被服务器断开的烦恼
 
