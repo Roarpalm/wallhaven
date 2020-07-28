@@ -113,20 +113,38 @@ class Wallhaven():
         async def img_download(url, sem, session, fail=False):
             '''download img'''
             async with sem:
+                flag = False
                 name = url.split('/')
                 filename = self.dir_path + name[-1]
                 response = await session.get(url, headers=self.header)
+                if response.status != 200:
+                    url = url.replace(".jpg",".png") # replace .jpg to .png
+                    name = url.split('/')
+                    flag = True
+                    response = await session.get(url, headers=self.header) # get again
+                    if response.status != 200:
+                        if not fail:
+                            print(f"{name[-1]} 404 not found")
+                            self.fail_url_list.append(url)
+                            async with aiofiles.open('url.txt', 'r+') as f:
+                                data = await f.read()
+                                await f.seek(0)
+                                await f.truncate()
+                                await f.write(data.replace(f'{url.replace(".png", ".jpg")}\n', ''))
+                        return
                 try:
                     file_size = int(response.headers['content-length']) # ask size
                 except:
-                    url = url.replace("jpg", "png")
+                    if fail:
+                        self.fail_url_list.append(url)
+                    return
                 else:
                     if os.path.exists(filename):
-                        first_byte = os.path.getsize(filename)
+                        first_byte = os.path.getsize(filename) # local size
                     else:
                         first_byte = 0
                     if first_byte >= file_size:
-                        print(f'{name[-1]} is already')
+                        print(f'{name[-1]} already downloaded')
                         if fail:
                             self.fail_url_list.remove(url)
                         else:
@@ -134,7 +152,10 @@ class Wallhaven():
                                 data = await f.read()
                                 await f.seek(0)
                                 await f.truncate()
-                                await f.write(data.replace(f'{url}\n', ''))
+                                if flag:
+                                    await f.write(data.replace(f"{url.replace('.png', '.jpg')}\n", ""))
+                                else:
+                                    await f.write(data.replace(f'{url}\n', ''))
                         return
                     headers = {
                         'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36',
@@ -142,25 +163,31 @@ class Wallhaven():
                     try:
                         response = await session.get(url, headers=headers)
                         with open(filename, 'ab') as f:
-                            with tqdm(total=file_size, initial=first_byte, unit='B', unit_scale=True, desc=name[-1], ncols=85) as pbar: # process bar
-                                while True:
-                                    chunk = await response.content.read(1024)
-                                    if not chunk:
-                                        break
-                                    f.write(chunk)
-                                    pbar.update(len(chunk))
+                            while True:
+                                chunk = await response.content.read(1024)
+                                if not chunk:
+                                    break
+                                f.write(chunk)
                         async with aiofiles.open('url.txt', 'r+') as f:
                             data = await f.read()
                             await f.seek(0)
                             await f.truncate()
-                            await f.write(data.replace(f'{url}\n', ''))
+                            if flag:
+                                await f.write(data.replace(f'{url.replace(".png", ".jpg")}\n', ''))
+                            else:
+                                await f.write(data.replace(f'{url}\n', ''))
                         if fail:
-                            self.fail_url_list.remove(url) # delete url from fail_url_list
+                            self.fail_url_list.remove(url) # if success, remove from self.fail_url_list
+
+                        if os.path.getsize(filename) < file_size: # if local size small than file size, download again
+                            self.fail_url_list.append(url)
+
                         self.n += 1
+                        self.ms.update.emit(self.n)
                     except:
                         if not fail:
                             self.fail_url_list.append(url)
-                        print(f'{name[-1]} fail to download')
+                        print(f'{name[-1]}fail to download')
 
         def write_fail_url():
             '''save fail url'''
