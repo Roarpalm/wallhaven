@@ -201,3 +201,15 @@ exe版本进行了更新
 
 #### 2020年7月28日更新(7.6):
 好吧，情况有所缓解，但偶尔还是会有点小问题，持续优化中
+
+#### 2020年8月25日更新(7.7):
+之前每次链接失效、文件已存在、下载完成时都要异步修改url.txt导致url.txt的内容异常被清空，现在改为下载失败的时候写入fail.txt，每次运行先检查已下载的文件和fail.txt以修改url.txt
+
+困扰许久的```RuntimeError: Event loop is closed```终究还是```async.run()```的锅，改为：
+
+```python
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+loop.run_until_complete(main())
+loop.close()
+```
