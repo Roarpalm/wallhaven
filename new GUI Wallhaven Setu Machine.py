@@ -155,11 +155,12 @@ class GUI():
                 url_list = f.read().splitlines()
             return url_list
 
-        async def check_url(session, url):
+        async def check_url(session, url, small_name):
             '''验证url'''
             response = await session.get(url, headers=self.header)
             if response.status != 200:
-                self.ms.text_print.emit(url + " HTTP:" + str(response.status))
+                if url.endswith("jpg"):
+                    self.ms.text_print.emit(small_name + " HTTP:" + str(response.status))
                 return False
             return response
 
@@ -185,10 +186,10 @@ class GUI():
             '''下载图片'''
             async with sem:
                 url = get_full_url(small_name) + ".jpg"
-                response = await check_url(session, url)
+                response = await check_url(session, url, small_name)
                 if not response:
                     url = get_full_url(small_name) + ".png"
-                    response = await check_url(session, url)
+                    response = await check_url(session, url, small_name)
                     if not response:
                         self.ms.text_print.emit(f"{small_name}失效，已移除")
                         if not fail:
@@ -204,7 +205,7 @@ class GUI():
                 if os.path.exists(filename):
                     first_byte = os.path.getsize(filename) # 本地文件大小
                     if first_byte >= file_size:
-                        self.ms.text_print.emit(f'{name}已存在')
+                        self.ms.text_print.emit(f'{small_name}已存在')
                         await change_txt("url.txt", small_name)
                         return
                     headers = {
@@ -220,8 +221,8 @@ class GUI():
                             f.write(chunk)
                 except:
                     if not fail:
-                        write_fail_url(url)
-                    self.ms.text_print.emit(f'{name}下载失败')
+                        write_fail_url(small_name)
+                    self.ms.text_print.emit(f'{small_name}下载失败')
                     return
 
                 
