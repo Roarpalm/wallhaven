@@ -1,4 +1,4 @@
-﻿import asyncio, aiohttp, aiofiles, os
+﻿import asyncio, aiohttp, os
 from time import time, sleep, strftime, localtime
 from bs4 import BeautifulSoup
 from threading import Thread
@@ -113,10 +113,10 @@ class GUI():
                     short_url = page_url.split('/')[-1]
                     #只保存图片编号
                     if short_url not in all_list:
-                        async with aiofiles.open('all url.txt', 'a') as f:
-                            await f.write(short_url + '\n')
-                        async with aiofiles.open('url.txt', 'a') as e:
-                            await e.write(short_url + '\n')
+                        with open('all url.txt', 'a') as f:
+                            f.write(short_url + '\n')
+                        with open('url.txt', 'a') as e:
+                            e.write(short_url + '\n')
                 self.ms.update.emit(i + 1)
 
         async def main():
