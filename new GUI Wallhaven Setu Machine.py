@@ -71,8 +71,8 @@ class GUI():
                 _token = i['value']
             data = {
                 '_token' : _token,
-                'username': 'roarpalm', # 账号
-                'password': 'qweasdzxc'  # 密码
+                'username': '', # 账号
+                'password': ''  # 密码
             }
             login_url = 'https://wallhaven.cc/auth/login'
             response = await session.post(login_url, headers=self.header, data=data)
